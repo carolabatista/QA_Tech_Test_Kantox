@@ -1,0 +1,556 @@
+{
+	"info": {
+		"_postman_id": "500441fd-cd3e-43c1-acf9-83efe1e302ac",
+		"name": "QA Tech Test API Collection",
+		"description": "This collection addresses the request for task 2 of the QA Tech Test. Since the endpoints were clearly stated in the description, this implementation mostly addresses this request (with some humor and pop culture references in the comments and authors and post names), with some tests to check invalid formats. The goal was to don't do much, but what was done, to be done as clean and organised as possible.  \n  \nI focused on writing the test for all positive validations, but you'll see in the list of variables that I also laid the ground for negatives and edge cases. In order to don't over duplicate or fork, I'll comment here:  \n  \n\\- Empty strings, long (to the limit) and beyond the limit  \n\\- Negative and zero as ID numbers  \n\\- Body including special characters or suspicious format (looking like a script, for security testing)  \n\\- Long request, to check performance\n\nObs: I was going to add a POST request to create a new comment with a non-existing postID in the DB (given there were only two posts with IDs 1 and 2), to check for failure - however it did allow to create it, so I assumed they were unrelated and removed that check, but this can be discussed in the tech refinement.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "34874963",
+		"_collection_link": "https://www.postman.com/science-meteorologist-33391815/qa-tech-test/collection/34874963-500441fd-cd3e-43c1-acf9-83efe1e302ac?action=share&source=collection_link&creator=34874963"
+	},
+	"item": [
+		{
+			"name": "Posts",
+			"item": [
+				{
+					"name": "GET all posts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Body is an array\", function () {",
+									"  var posts = pm.response.json();",
+									"  pm.expect(posts).to.be.an('array');",
+									"  posts.forEach(function (post) {",
+									"    pm.expect(post).to.have.property('id');",
+									"    pm.expect(post).to.have.property('title');",
+									"    pm.expect(post).to.have.property('author');",
+									"  });",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/posts",
+						"description": "This request tests the basic retrieval of all blog posts in the system. It validates that the API correctly returns a list of existing resources and that the schema of each post matches expectations."
+					},
+					"response": []
+				},
+				{
+					"name": "GET post by ID (existing post)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Post contains expected fields\", function () {",
+									"  var post = pm.response.json();",
+									"  pm.expect(post).to.be.an('object');",
+									"  pm.expect(post).to.have.property('id');",
+									"  pm.expect(post).to.have.property('title');",
+									"  pm.expect(post).to.have.property('author');",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/posts/{{existingPostId}}",
+						"description": "This request confirms that individual post objects can be accessed directly and reliably, and that the API correctly responds to specific fetch requests."
+					},
+					"response": []
+				},
+				{
+					"name": "GET post by ID (non-existing post)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Returns empty object for non-existing post\", function () {",
+									"  pm.response.to.have.status(200);",
+									"  var body = pm.response.json();",
+									"  pm.expect(body).to.be.an('object');",
+									"  pm.expect(Object.keys(body).length).to.eql(0);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/posts/{{nonExistingPostId}}",
+						"description": "This ensures the backend handles errors gracefully, does not expose sensitive information, and communicates clearly to clients about the unavailability of resources. The same test could have been done in comments, I chose to do it once to show the logic behind it"
+					},
+					"response": []
+				},
+				{
+					"name": "POST create new post",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"  pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response contains new post with id\", function () {",
+									"  var post = pm.response.json();",
+									"  pm.expect(post).to.have.property('id');",
+									"  pm.expect(post.title).to.eql(pm.variables.get(\"newlyCreatedPostTitle\"));",
+									"  pm.expect(post.author).to.eql(pm.variables.get(\"newlyCreatedPostAuthor\"));",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"{{newlyCreatedPostTitle}}\",\n  \"author\": \"{{newlyCreatedPostAuthor}}\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/posts",
+						"description": "Ensuring that new posts can be reliably added to the system confirms data creation and insertion logic operates as expected"
+					},
+					"response": []
+				},
+				{
+					"name": "PUT update existing post",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Post updated correctly\", function () {",
+									"  var post = pm.response.json();",
+									"  pm.expect(post).to.have.property('id');",
+									"  pm.expect(post.title).to.eql(pm.variables.get(\"updatedPostTitle\"));",
+									"  pm.expect(post.author).to.eql(pm.variables.get(\"updatedPostAuthor\"));",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"{{updatedPostTitle}}\",\n  \"author\": \"{{updatedPostAuthor}}\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/posts/{{existingPostId}}",
+						"description": "Updating existing resources ensures that the API supports ongoing modification. It’s important that the update endpoint modifies only the intended resource and correctly saves provided changes."
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE remove a post",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 204\", function () {",
+									"  pm.expect(pm.response.code === 200 || pm.response.code === 204).to.be.true;",
+									"});",
+									"pm.test(\"Response body is empty\", function () {",
+									"  pm.expect(pm.response.text()).to.be.oneOf(['', null]);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseURL}}/posts/{{postIdToBeDeleted}}",
+						"description": "This ensures posts can be removed when they are outdated, incorrect, or unwanted, and that the API responds appropriately to removal actions. It also verifies that the system returns the expected confirmation or empty body upon successful deletion."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Comments",
+			"item": [
+				{
+					"name": "GET all comments",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Body is an array\", function () {",
+									"  var comments = pm.response.json();",
+									"  pm.expect(comments).to.be.an('array');",
+									"  comments.forEach(function (comment) {",
+									"    pm.expect(comment).to.have.property('id');",
+									"    pm.expect(comment).to.have.property('body');",
+									"    pm.expect(comment).to.have.property('postId');",
+									"  });",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/comments"
+					},
+					"response": []
+				},
+				{
+					"name": "GET comment by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Comment contains expected fields\", function () {",
+									"  var comment = pm.response.json();",
+									"  pm.expect(comment).to.have.property('id');",
+									"  pm.expect(comment).to.have.property('body');",
+									"  pm.expect(comment).to.have.property('postId');",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/comments/{{existingCommentId}}"
+					},
+					"response": []
+				},
+				{
+					"name": "POST create new comment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"  pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response contains new comment with id\", function () {",
+									"  var comment = pm.response.json();",
+									"  pm.expect(comment).to.have.property('id');",
+									"  pm.expect(comment.body).to.eql(pm.variables.get(\"newlyCreatedCommentbody\"));",
+									"  pm.expect(comment.postId).to.eql(parseInt(pm.variables.get(\"existingPostId\")));",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"body\": \"{{newlyCreatedCommentbody}}\",\n  \"postId\": \"{{existingPostId}}\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/comments"
+					},
+					"response": []
+				},
+				{
+					"name": "PUT update existing comment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Comment updated correctly\", function () {",
+									"  var comment = pm.response.json();",
+									"  pm.expect(comment).to.have.property('id');",
+									"  pm.expect(comment.body).to.eql(pm.variables.get(\"updatedCommentBody\"));",
+									"  pm.expect(comment.postId).to.eql(parseInt(pm.variables.get(\"existingPostId\")));",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"body\": \"{{updatedCommentBody}}\",\n  \"postId\": \"{{existingPostId}}\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/comments/{{existingCommentId}}"
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE a comment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 204\", function () {",
+									"  pm.expect(pm.response.code === 200 || pm.response.code === 204).to.be.true;",
+									"});",
+									"pm.test(\"Response body is empty\", function () {",
+									"  pm.expect(pm.response.text()).to.be.oneOf(['', null]);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseURL}}/comments/{{commentIDToBeDeleted}}"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Profile",
+			"item": [
+				{
+					"name": "GET Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Profile has correct data\", function () {",
+									"  var profile = pm.response.json();",
+									"  pm.expect(profile).to.have.property('name');",
+									"  pm.expect(profile.name).to.eql(parseInt(pm.variables.get(\"existingProfileName\")));",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"New Post\",\n  \"author\": \"Author Name\"\n}\n"
+						},
+						"url": "{{baseURL}}/profile"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseURL",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "existingPostId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "nonExistingPostId",
+			"value": "4321",
+			"type": "string"
+		},
+		{
+			"key": "postIdToBeDeleted",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "existingCommentId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "commentIDToBeDeleted",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "newlyCreatedPostAuthor",
+			"value": "Edgar Allan Poe",
+			"type": "string"
+		},
+		{
+			"key": "newlyCreatedPostTitle",
+			"value": "BuzzFeed New Article",
+			"type": "string"
+		},
+		{
+			"key": "updatedPostAuthor",
+			"value": "Virginia Woolf",
+			"type": "string"
+		},
+		{
+			"key": "updatedPostTitle",
+			"value": "Reddit New Rant",
+			"type": "string"
+		},
+		{
+			"key": "newlyCreatedCommentbody",
+			"value": "Houston we have a problem",
+			"type": "string"
+		},
+		{
+			"key": "updatedCommentBody",
+			"value": "We will always have Paris",
+			"type": "string"
+		},
+		{
+			"key": "existingProfileName",
+			"value": "typicode",
+			"type": "string"
+		},
+		{
+			"key": "emptyString",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "maxLenghtString",
+			"value": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+			"type": "string"
+		},
+		{
+			"key": "veryLongString",
+			"value": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\n",
+			"type": "string"
+		},
+		{
+			"key": "whiteSpaceString",
+			"value": "                  ",
+			"type": "string"
+		},
+		{
+			"key": "zeroID",
+			"value": "0",
+			"type": "string"
+		},
+		{
+			"key": "negativeID",
+			"value": "-4",
+			"type": "string"
+		}
+	]
+}
